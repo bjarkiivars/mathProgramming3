@@ -1,6 +1,5 @@
 ## template for the programming assignment 3
 
-
 class Matrix:
     def __init__(self, matrix:list) -> None:
         #Expected list of list [[a,b,c],[d,e,f]]
@@ -48,10 +47,14 @@ class Matrix:
         #return AB
     
     def matrix_multiplication(self, B):
-        """This function takes as input a matrix 𝐴 of size 𝑛×𝑚 and a 
-        matrix 𝐵 of size 𝑚×𝑟, and it returns the matrix 𝐴𝐵. If the matrix dimensions do not 
-        match or if the matrices are otherwise invalid, it should return the number 0. Matrices 
-        are given as two-dimensional lists.
+        """Takes two Matricies and we use triple nested for loops to iterate
+        in a way that allows us to multiply e.g. the first row and each column in A
+        with Matrix B each row column in index 0, then we iterate back to the first index in A
+        in row 0, and iterate through the first column but second row in B, and iterate each row in B
+        This way we're performing:
+            |(A), (B), (C)|  |(A2), B2, C2|
+        A = | D,   E,   F| * |(D2), E2, F2| = (A * A2) + (B * D2) + (C * G2)... and so on
+            | G,   H,   I|   |(G2), H2, I2|
         """
         #Create a return Matrix
         AB = []
@@ -96,7 +99,53 @@ class Matrix:
                     return None
         return size
             
+class Vector:
+    def __init__(self, vector:list):
+        """Takes a vector paragram in R3"""
+        self.vector = vector
+        self.len = len(vector)
+
+    def __mul__(self, w):
+        #Checks if the W parameter is of the instance Vector
+        if(isinstance(w, Vector) == False):
+            raise ValueError("Both vectors have to be of the instance Vector")
         
+        #Checks if both vectors contain only numbers (int / float)
+        self.validateEachAxis()
+        w.validateEachAxis()
+
+        #Will raise error if it's not ok, no need for a return value
+        self.validateVectors(w)
+
+        WV = self.dot_product(w)
+        return WV
+        
+    def dot_product(self, w):
+        """Performs the dot product vector multiplication"""
+        VW = []
+        for axis in range(self.len):
+            mult_axis = 0
+            #Multiply each axis, x1 * x2, y1 * y2 and turns it into a list
+            mult_axis = [self.vector[axis][0] * w.vector[axis][0]]
+            VW.append(mult_axis)
+        return VW
+
+    def validateVectors(self, w):
+        if self.len != w.len:
+            raise ValueError("Both vectors must be of the same length.")
+        if self.len < 1:
+            raise ValueError("Vectors must have at least one coordinate.")
+        return
+    
+    def validateEachAxis(self):
+        """Validates each axis: x, y, z to check if they're numbers."""
+        for axis in self.vector:
+            for item in axis:
+                if(isinstance(item, int)):
+                    return
+                elif(isinstance(item, float)):
+                    return
+                raise ValueError("Each axis must be an integer or a float.")
 
 def squareroot(x):
    return x**0.5
@@ -118,12 +167,10 @@ def matrix_multiplication(A, B):
 # This function takes as input two lists that represent vectors vector1 and vector2 
 # of R^3 and returns the dot product of vector1 and vector2.
 def dot_product(vector1, vector2):
-    if len(vector1) != len(vector2):
-        raise ValueError("Both vectors must be of the same length.")
-    if len(vector1) < 1:
-        raise ValueError("Vectors must have at least one coordinate.")
-    
-    return 0
+    v = Vector(vector1)
+    w = Vector(vector2)
+    VW = v * w
+    return VW
 
 
 # This function takes as input two lists that represent vectors vector1 and vector2 
@@ -153,6 +200,7 @@ def closest_point_on_plane(A,B,C,D):
    
    return A
 
+"""
 A = [[1,2,3],
     [4,5,6],
     [7,8,9]]
@@ -166,3 +214,7 @@ B_mod = [[9,8],
         [5,4]]
 B_1 = [[9],[8],[7]]
 print(matrix_multiplication(A,B_1)) #Expected [[30, 24, 18], [84, 69, 54], [138, 114, 90]]
+"""
+vector1 = [[2], [-3], [5]]
+Vector2 = [[-3], [1], [2]]
+print(dot_product(vector1, Vector2))
