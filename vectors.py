@@ -1,5 +1,8 @@
 ## template for the programming assignment 3
 
+from __future__ import division
+
+
 class Matrix:
     def __init__(self, matrix:list) -> None:
         #Expected list of list [[a,b,c],[d,e,f]]
@@ -103,7 +106,10 @@ class Vector:
     def __init__(self, vector:list):
         """Takes a vector paragram in R3"""
         self.vector = vector
-        self.len = len(vector)
+        #How many items we have in our vector
+        self.size = len(vector)
+        #What the length property of our axis is
+        self.len = 0
 
     def __mul__(self, w):
         #Checks if the W parameter is of the instance Vector
@@ -123,29 +129,146 @@ class Vector:
     def dot_product(self, w):
         """Performs the dot product vector multiplication"""
         VW = []
-        for axis in range(self.len):
+        for axis in range(self.size):
             mult_axis = 0
             #Multiply each axis, x1 * x2, y1 * y2 and turns it into a list
-            mult_axis = [self.vector[axis][0] * w.vector[axis][0]]
+            mult_axis = self.vector[axis] * w.vector[axis]
             VW.append(mult_axis)
         return VW
 
     def validateVectors(self, w):
-        if self.len != w.len:
+        if self.size != w.size:
             raise ValueError("Both vectors must be of the same length.")
-        if self.len < 1:
+        if self.size < 1:
             raise ValueError("Vectors must have at least one coordinate.")
         return
     
     def validateEachAxis(self):
         """Validates each axis: x, y, z to check if they're numbers."""
         for axis in self.vector:
-            for item in axis:
-                if(isinstance(item, int)):
-                    return
-                elif(isinstance(item, float)):
-                    return
-                raise ValueError("Each axis must be an integer or a float.")
+            if(isinstance(axis, int)):
+                return
+            elif(isinstance(axis, float)):
+                return
+            raise ValueError("Each axis must be an integer or a float.")
+
+    def __vector_length_recur(self, index):
+        """Recursive method that calculates the length of the vector: 
+        ||V|| by doing square root on each axis squared,
+        returns the length of the vector"""
+        #Base case, we have finished calculating all the items, we are not out of bounds
+        if index == self.size:
+            return 0 #So we can have the call stack add the numbers up without breaking
+        #Get the squared number = power of 2
+        squared = self.vector[index] * self.vector[index]
+        sq_rt = 0.5
+        #Do a square root on the squared number
+        result = squared ** sq_rt
+        #Return both the result and continue the recursion
+        return result + self.__vector_length_recur(index+1)
+        
+
+    def length(self):
+        """Calculates the length of the vector = ||V||"""
+        self.len = self.__vector_length_recur(0)
+
+    def divide_vector(self, number):
+        """Take a number parameter to divide with each axis in the vector"""
+        result = []
+        for index in range(self.size):
+            result.append(self.vector[index] / number)
+        return result
+
+    def vector_sum(self, vector, index):
+        """Takes a parameter vector and index, sums up the numbers in recursion"""
+        #Base case, if we are out of bounds
+        if index == self.size:
+            return 0 #0 for callstack addition
+        #Add the numbers in the call stack and make a method call again to repeat recursion
+        return vector[index] + self.vector_sum(vector, index+1)
+
+    def projection(self, d):
+        """projection(v,d): This function takes as input two vectors 𝑣 and 𝑑 of ℝ3and returns the 
+        projection of 𝑣 on 𝑑. Vectors are given as lists. If 𝑑 =0⃗ , then the function should return 
+        the number 0.  """
+        #Let's write cases:
+
+        #v and d can not be equal to 0
+        if self.size == 0 or d.size == 0:
+            return 0
+
+        #formula is proj(d)(v) = ((v dot d) / ||d|||^2) dot d
+        #First find the dot product of v * d
+        v_dot_d = self.dot_product(d)
+
+        #Get the sum of the v * d dot product
+        sum1 = self.vector_sum(v_dot_d, 0)
+
+        #Now to find ||d||^2, we will do this by doing d * d
+        d_dot_d = d.dot_product(d)
+
+        #Get the second sum of the dot product of d * d
+        sum2 = self.vector_sum(d_dot_d, 0)
+
+        #Divide the summation of the dot products:
+        divide_sums = sum1 / sum2 
+
+        #Finally multiply the divide_sums with each item in Vector d:
+        #Create a new list for the projection results of divide_sums * d
+        projection_result = []
+        for axis in d.vector:
+            #Multiply each item in d with the divide_sums result
+            projection_result.append(divide_sums * axis)
+        
+        #Finally return the result
+        return projection_result
+    
+    def cross(self, w):
+        """
+        V = <2, 3, 4>
+        W = <5, 6, 7>
+
+        To find the cross product of V and W, we can use the following formula:
+
+        V x W = <(Vy * Wz) - (Vz * Wy), (Vz * Wx) - (Vx * Wz), (Vx * Wy) - (Vy * Wx)>
+
+        where Vx, Vy, and Vz are the components of vector V, and Wx, Wy, and Wz are the components of vector W.
+
+        Substituting the values of V and W into this formula, we get:
+
+        V x W = <(3 * 7) - (4 * 6), (4 * 5) - (2 * 7), (2 * 6) - (3 * 5)>
+        = <-9, 8, -3>
+
+        So the cross product of vectors V and W is the vector <-9, 8, -3>.
+        """
+        #Let's write down some cases: for R3 Euclidean space
+        #V = [x,y,z], W = [x,y,z]
+        #V x W = 
+        # [ (Vy * Wz) - (Vz * Wy)
+        #   (Vz * Wx) - (Vx * Wz)
+        #   (Vx * Wy) - (Vy * Wx) ] 
+        cross_result = []
+        #Let's define each axis in both Vectors:
+        X1 = self.vector[0]
+        Y1 = self.vector[1]
+        Z1 = self.vector[2]
+
+        X2 = w.vector[0]
+        Y2 = w.vector[1]
+        Z2 = w.vector[2]
+
+        x_axis = (Y1 * Z2) - (Y2 * Z1)
+        y_axis = -((X1 * Z2) - (X2 * Z1))
+        z_axis = (X1 * Y2) - (X2 * Y1)
+
+        cross_result.append(x_axis)
+        cross_result.append(y_axis)
+        cross_result.append(z_axis)
+
+        return cross_result
+
+        
+
 
 def squareroot(x):
    return x**0.5
@@ -185,8 +308,10 @@ def cross_product(vector1, vector2):
 # of R^3 and returns the projection of vector on direction. Vectors are given as lists. 
 # If direction=0, then the function should return the number 0. 
 def projection(vector,direction):
-   
-   return vector
+   v = Vector(vector)
+   d = Vector(direction)
+
+   return v.projection(d)
    
       
 # This function takes as input four distinct points A,B,C,D. 
@@ -214,7 +339,27 @@ B_mod = [[9,8],
         [5,4]]
 B_1 = [[9],[8],[7]]
 print(matrix_multiplication(A,B_1)) #Expected [[30, 24, 18], [84, 69, 54], [138, 114, 90]]
-"""
-vector1 = [[2], [-3], [5]]
-Vector2 = [[-3], [1], [2]]
+
+vector1 = [2, -3, 5]
+Vector2 = [-3, 1, 2]
 print(dot_product(vector1, Vector2))
+
+vector1 = [1,2,3]
+vector2 = [4,5,6]
+v1 = Vector(vector1)
+v2 = Vector(vector2)
+print(v1.projection(v2))
+
+vector1 = [1,2,3]
+vector2 = [4,5,6]
+r = projection(vector1, vector2)
+print(r)
+
+"""
+vector1 = [2, 3, 4]
+vector2 = [5, 6, 7]
+
+v1 = Vector(vector1)
+v2 = Vector(vector2)
+
+print(v1.cross(v2))
