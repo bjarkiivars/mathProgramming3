@@ -1,7 +1,6 @@
 ## template for the programming assignment 3
 
-from __future__ import division
-
+#I decided to implement both the Matrix solution and Vector solutions as classes
 
 class Matrix:
     def __init__(self, matrix:list) -> None:
@@ -103,8 +102,10 @@ class Matrix:
         return size
             
 class Vector:
-    def __init__(self, vector:list):
-        """Takes a vector paragram in R3"""
+    def __init__(self, vector = []):
+        """Takes a vector paragram in R3 [x, y, z]"""
+        if isinstance(vector, list):
+            raise ValueError('The vector parameter has to be of type list.')
         self.vector = vector
         #How many items we have in our vector
         self.size = len(vector)
@@ -112,9 +113,15 @@ class Vector:
         self.len = 0
 
     def __mul__(self, w):
+        """Performs matrix multiplication"""
         #Checks if the W parameter is of the instance Vector
         if(isinstance(w, Vector) == False):
             raise ValueError("Both vectors have to be of the instance Vector")
+        
+        #Check if both vectors are the same size
+        if w.size != self.size:
+            raise ValueError('Both matricies have to have equal length for multiplication')
+
         
         #Checks if both vectors contain only numbers (int / float)
         self.validateEachAxis()
@@ -137,6 +144,7 @@ class Vector:
         return VW
 
     def validateVectors(self, w):
+        """Checks if the vectors are valid."""
         if self.size != w.size:
             raise ValueError("Both vectors must be of the same length.")
         if self.size < 1:
@@ -225,49 +233,110 @@ class Vector:
     
     def cross(self, w):
         """
-        V = <2, 3, 4>
-        W = <5, 6, 7>
-
-        To find the cross product of V and W, we can use the following formula:
-
-        V x W = <(Vy * Wz) - (Vz * Wy), (Vz * Wx) - (Vx * Wz), (Vx * Wy) - (Vy * Wx)>
-
-        where Vx, Vy, and Vz are the components of vector V, and Wx, Wy, and Wz are the components of vector W.
-
-        Substituting the values of V and W into this formula, we get:
-
-        V x W = <(3 * 7) - (4 * 6), (4 * 5) - (2 * 7), (2 * 6) - (3 * 5)>
-        = <-9, 8, -3>
-
-        So the cross product of vectors V and W is the vector <-9, 8, -3>.
+        This is all under the assumption we are working with Euclidean space R3.
+        We use the formula provided by the DMA Eighth Ed. for vector cross products.
         """
-        #Let's write down some cases: for R3 Euclidean space
-        #V = [x,y,z], W = [x,y,z]
-        #V x W = 
-        # [ (Vy * Wz) - (Vz * Wy)
-        #   (Vz * Wx) - (Vx * Wz)
-        #   (Vx * Wy) - (Vy * Wx) ] 
         cross_result = []
+
         #Let's define each axis in both Vectors:
+        #X1:
         X1 = self.vector[0]
         Y1 = self.vector[1]
         Z1 = self.vector[2]
-
+        #X2:
         X2 = w.vector[0]
         Y2 = w.vector[1]
         Z2 = w.vector[2]
 
+        #Let's create the result from our formula 
         x_axis = (Y1 * Z2) - (Y2 * Z1)
         y_axis = -((X1 * Z2) - (X2 * Z1))
         z_axis = (X1 * Y2) - (X2 * Y1)
 
+        #Finally append the result in to our result list
         cross_result.append(x_axis)
         cross_result.append(y_axis)
         cross_result.append(z_axis)
 
         return cross_result
 
+    def subtract(self, V2):
+        """Performs vector subtraction of each axis, x1-x2, y1-y2, z1-z2"""
+        #For readability: Let's make self.vector = V1
+        V1 = self.vector
         
+
+        #The zip() function creates a tuple of items with the same index,
+        #So we use that to take indexes of both vectors and put them in a tuple:
+        zipped = zip(V1, V2.vector)
+
+        #Create a list to return the results
+        subtract_result = []
+
+        #Iterate the tuple, subtract each pair and append the result
+        for V1i, V2i in zipped: 
+            subtract_result.append(V1i - V2i)
+
+        return subtract_result
+
+    def are_collinear(self, B, C, D):
+        """A function that checks if the given points are collinear (Meaning they lie on the same line)"""
+        
+        #Let's start by getting the u and v vector's, we subtract C - B and D - B
+        u = C.subtract(B)
+        v = D.subtract(B)
+
+        #By getting the cross product of u and v, we get a vector that is perpendicular to both u and v
+        cross_product = Vector(u).cross(Vector(v))
+
+        #Lastly, we check if the u and v are collinear, 
+        #To do this we check wether the cross product of u and v is the zero vector.
+        #Using the absolute value function to get the absolute value of each component (axis)
+        #Then check wether each component (axis) is less than 1e-9,
+        #1e-9 is a small tolerance value used to account for floating point calculations, 
+        #although it's not exact, because we can't expect it to be exactly 0.
+        #Lastly we are doing equality checks on each component, if all are less than 1e-9, 
+        #We return True, else we return False is any component is greater.
+        return abs(cross_product[0]) < 1e-9 and abs(cross_product[1]) and abs(cross_product[2]) < 1e-9
+    
+    def closest_point_on_plane(self, A, B, C, D):
+        """Takes 4 Vector class parameters, checks if they are collinear and if not,
+            returns their closest point on the plane."""
+        #Start by checking if the points B, C and D are collinear:
+        collinear = self.are_collinear(B, C, D)
+
+        if collinear:
+            return 0
+
+        #To find the normal N, we use the formula: (B-C) x (D-B)
+        #One is a regular list, the other is an instance of Vector to make use of the methods.
+        normal = Vector((B.subtract(C))).cross(Vector(D.subtract(B)))
+        n = Vector(normal)
+        #Next to find our t, we use the following formula:
+       
+        #     n dot (B - A)
+        #   ----------------- <- Division
+        #        n dot n
+        
+        
+        upper_half = n.dot_product(Vector(B.subtract(A)))
+        lower_half = n.dot_product(n)
+        t = sum(upper_half) / sum(lower_half)
+
+        #Create our resulting list, which we will fill with our closes point
+        closest_point = []
+
+        #Here we populate the closest point, by using the following:
+        # Ax + t * Nx = x axis,
+        # Ay + t * Ny = y axis,
+        # Az + t * Nz = z axis
+        for i in range(A.size):
+            axis = A.vector[i] + t * n.vector[i]
+            closest_point.append(axis)
+        
+        return closest_point
+
+
 
 
 def squareroot(x):
@@ -299,10 +368,12 @@ def dot_product(vector1, vector2):
 # This function takes as input two lists that represent vectors vector1 and vector2 
 # of R^3 and returns the cross product of vector1 and vector2.
 def cross_product(vector1, vector2):
-    if len(vector1) != 3 or len(vector2) != 3:
+    v1 = Vector(vector1)
+    v2 = Vector(vector2)
+    if v1.size != 3 or v2.size != 3:
         raise ValueError("Both vectors must be of length 3.")
     
-    return [0, 0, 0]
+    return v1.cross(v2)
 
 # This function takes as input two vectors vector and direction 
 # of R^3 and returns the projection of vector on direction. Vectors are given as lists. 
@@ -322,44 +393,14 @@ def projection(vector,direction):
 # if A,B,C,D are not distinct, or if the input is not valid for another reason, 
 # then the function should return 0.
 def closest_point_on_plane(A,B,C,D):
-   
-   return A
+   closest_point = Vector()
+   A1 = Vector(A)
+   B1 = Vector(B)
+   C1 = Vector(C)
+   D1 = Vector(D)
+   return closest_point.closest_point_on_plane(A1, B1, C1, D1)
 
-"""
-A = [[1,2,3],
-    [4,5,6],
-    [7,8,9]]
 
-B = [[9,8,7],
-    [6,5,4],
-    [3,2,1]]
 
-B_mod = [[9,8],
-        [7,6],
-        [5,4]]
-B_1 = [[9],[8],[7]]
-print(matrix_multiplication(A,B_1)) #Expected [[30, 24, 18], [84, 69, 54], [138, 114, 90]]
 
-vector1 = [2, -3, 5]
-Vector2 = [-3, 1, 2]
-print(dot_product(vector1, Vector2))
-
-vector1 = [1,2,3]
-vector2 = [4,5,6]
-v1 = Vector(vector1)
-v2 = Vector(vector2)
-print(v1.projection(v2))
-
-vector1 = [1,2,3]
-vector2 = [4,5,6]
-r = projection(vector1, vector2)
-print(r)
-
-"""
-vector1 = [2, 3, 4]
-vector2 = [5, 6, 7]
-
-v1 = Vector(vector1)
-v2 = Vector(vector2)
-
-print(v1.cross(v2))
+#print(closest_point_on_plane([98.998, -11.621, 2.612], [-55.431, -75.053, -6.379], [-47.893, 4.822, 90.054], [-364.48899999999986, -3349.928, -3960.132]))
